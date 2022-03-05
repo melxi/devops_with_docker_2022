@@ -1,0 +1,25 @@
+FROM golang:1.16-alpine AS build-stage
+
+ENV CGO_ENABLED=0
+
+ENV REQUEST_ORIGIN=http://localhost
+
+ADD . .
+
+WORKDIR $GOPATH/example-backend
+
+RUN go build -o server && \
+    adduser -D backend && \
+    chown -R backend:backend $GOPATH/example-backend
+
+FROM scratch
+
+COPY --from=build-stage /go/example-backend /go/example-backend
+
+COPY --from=build-stage /etc/passwd /etc/passwd
+
+USER backend
+
+EXPOSE 8080
+
+ENTRYPOINT ["/go/example-backend/server"]
